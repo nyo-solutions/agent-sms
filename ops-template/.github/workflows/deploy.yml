@@ -1,0 +1,16 @@
+name: Deploy agent-sms
+# Copy into your PRIVATE ops repo. Needs the repo variable AWS_ROLE_ARN (aws/setup-github.sh)
+# and the repo secret SMS_WEBHOOK_SECRET.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref: { description: "agent-sms branch, tag or SHA to deploy", default: "main" }
+permissions: { id-token: write, contents: read }
+jobs:
+  deploy:
+    uses: nyo-solutions/agent-sms/.github/workflows/sms-deploy.yml@main
+    with:
+      source_ref: ${{ inputs.source_ref }}
+    secrets:
+      aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      sms_webhook_secret: ${{ secrets.SMS_WEBHOOK_SECRET }}

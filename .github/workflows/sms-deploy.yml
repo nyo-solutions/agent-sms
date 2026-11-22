@@ -1,0 +1,42 @@
+name: agent-sms deploy (reusable)
+# Deploys the AgentSms stack (function URL + table). Call it from a private ops repo
+# (see ops-template/) so run logs, which include the webhook URL, stay private.
+on:
+  workflow_call:
+    inputs:
+      source_repo: { type: string, default: "nyo-solutions/agent-sms", description: "Repo holding this code" }
+      source_ref: { type: string, default: "main", description: "Branch, tag or SHA of the code to deploy" }
+      retention_days: { type: number, default: 30, description: "Days a text is kept" }
+    secrets:
+      aws_role_arn: { required: true, description: "IAM role GitHub OIDC may assume (aws/setup-github.sh)" }
+      sms_webhook_secret: { required: true, description: "HMAC secret shared with the phone app (32+ characters)" }
+permissions: { id-token: write, contents: read }
+concurrency: { group: agent-sms-aws, cancel-in-progress: false }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: aws } }
+    steps:
+      - name: Check inputs
+        working-directory: .
+        env: { ROLE: "${{ secrets.aws_role_arn }}", SECRET: "${{ secrets.sms_webhook_secret }}" }
+        run: |
+          [ -n "$ROLE" ] || { echo "::error::aws_role_arn is empty (run aws/setup-github.sh)"; exit 1; }
+          [ "${#SECRET}" -ge 32 ] || { echo "::error::sms_webhook_secret must be at least 32 characters"; exit 1; }
+      - uses: actions/checkout@v4
+        with: { repository: "${{ inputs.source_repo }}", ref: "${{ inputs.source_ref }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: aws/package-lock.json }
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ secrets.aws_role_arn }}", aws-region: us-east-1, role-session-name: "agent-sms-${{ github.run_id }}", mask-aws-account-id: true }
+      - name: Mask account id everywhere
+        run: echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - name: cdk deploy
+        env: { SMS_WEBHOOK_SECRET: "${{ secrets.sms_webhook_secret }}" }
+        run: npx cdk deploy AgentSms -c retentionDays=${{ inputs.retention_days }} --require-approval never
+      - name: Summary
+        run: |
+          url=$(aws cloudformation describe-stacks --stack-name AgentSms --query "Stacks[0].Outputs[?OutputKey=='WebhookUrl'].OutputValue | [0]" --output text)
+          echo "Webhook URL for the phone app: $url" >> "$GITHUB_STEP_SUMMARY"

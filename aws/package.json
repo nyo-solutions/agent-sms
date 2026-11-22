@@ -1,0 +1,29 @@
+{
+  "name": "agent-sms-aws",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AWS side of agent-sms: Lambda function URL that stores forwarded SMS in DynamoDB",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "tsc --noEmit",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "3.1164.0",
+    "@types/node": "22.10.2",
+    "aws-cdk": "2.1148.0",
+    "ts-node": "10.9.2",
+    "typescript": "5.6.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.275.0",
+    "constructs": "10.8.1"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nyo-solutions/agent-sms.git",
+    "directory": "aws"
+  }
+}
