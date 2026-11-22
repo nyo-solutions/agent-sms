@@ -21,7 +21,7 @@ OUT="$DIR/sms-gateway-backup.json"
       sim_slot: Number(process.env.SIM) || 0,
       template: "{\n  \"from\":\"%from%\",\n  \"text\":\"%text%\",\n  \"sentStamp\":%sentStamp%,\n  \"receivedStamp\":%receivedStamp%,\n  \"sim\":\"%sim%\"\n}",
       headers: "{\"User-agent\":\"SMS Forwarder App\"}",
-      retries_number: 10, ignore_ssl: false, chunked_mode: false, // fixed Content-Length is_sms_enabled: true,
+      retries_number: 10, ignore_ssl: false, chunked_mode: false, is_sms_enabled: true,
       sign_hmac_sha256: true, sign_hmac_sha256_secret: secret, store_failed: true, local_mode: false,
     };
     fs.writeFileSync(process.argv[2], JSON.stringify([rule], null, 2) + "\n");
